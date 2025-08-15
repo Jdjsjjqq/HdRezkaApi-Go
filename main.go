@@ -208,7 +208,7 @@ type SearchResultItem struct {
     URL      string
     Image    string
     Category CategoryType
-    Rating   *float64 // Добавлено поле Rating
+    Rating   *float64
 }
 
 // HdRezkaApi - основной API класс
@@ -1406,7 +1406,7 @@ func (api *HdRezkaApi) makeStreamRequest(data url.Values) (*Stream, error) {
         stream.Episode = mustAtoi(episode)
     }
 
-    name := api.GetName() // Исправлено: получаем только одно значение
+    name := api.GetName()
     stream.Name = name
 
     // Обрабатываем субтитры
@@ -1563,7 +1563,7 @@ func (api *HdRezkaApi) GetSeasonStreams(season int, translation int, priority, n
 
             if attempt == 0 && ignore {
                 // Небольшая задержка перед повторной попыткой
-                time.Sleep(time.Second) // Добавлен импорт time
+                time.Sleep(time.Second)
             }
         }
 
@@ -1977,8 +1977,16 @@ func (s *HdRezkaSession) Login(email, password string) error {
         return fmt.Errorf("origin is required for login")
     }
 
+    // Проверяем, установлен ли прокси
+    var proxyOpt Option
+    if s.proxy != nil {
+        proxyOpt = WithProxy(s.proxy.String())
+    } else {
+        proxyOpt = func(api *HdRezkaApi) {} // Пустая опция, если прокси не задан
+    }
+
     api, err := NewHdRezkaApi(s.origin, 
-        WithProxy(s.proxy.String()),
+        proxyOpt,
         WithHeaders(s.headers),
         WithCookies(s.cookies),
     )
@@ -2017,8 +2025,16 @@ func (s *HdRezkaSession) Get(rawURL string) (*HdRezkaApi, error) {
         urlToUse = rawURL
     }
 
+    // Проверяем, установлен ли прокси
+    var proxyOpt Option
+    if s.proxy != nil {
+        proxyOpt = WithProxy(s.proxy.String())
+    } else {
+        proxyOpt = func(api *HdRezkaApi) {} // Пустая опция, если прокси не задан
+    }
+
     api, err := NewHdRezkaApi(urlToUse,
-        WithProxy(s.proxy.String()),
+        proxyOpt,
         WithHeaders(s.headers),
         WithCookies(s.cookies),
         WithTranslatorsPriority(s.translatorsPriority),
@@ -2041,8 +2057,16 @@ func (s *HdRezkaSession) Search(query string, findAll bool) (interface{}, error)
         return nil, fmt.Errorf("origin is required for search")
     }
 
+    // Проверяем, установлен ли прокси
+    var searchOpt SearchOption
+    if s.proxy != nil {
+        searchOpt = SearchWithProxy(s.proxy.String())
+    } else {
+        searchOpt = func(search *HdRezkaSearch) {} // Пустая опция, если прокси не задан
+    }
+
     search := NewHdRezkaSearch(s.origin,
-        SearchWithProxy(s.proxy.String()),
+        searchOpt,
         SearchWithHeaders(s.headers),
         SearchWithCookies(s.cookies),
     )
